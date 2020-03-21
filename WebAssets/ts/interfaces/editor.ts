@@ -1,3 +1,4 @@
+import type { EditorView } from '@codemirror/next/view';
 import type { Language, DiagnosticData, ServerOptions } from './protocol';
 
 export interface EditorOptions<TExtensionData> {
@@ -12,13 +13,14 @@ export interface EditorOptions<TExtensionData> {
         };
         serverError?: (message: string) => void;
     };
-    forCodeMirror?: CodeMirror.EditorConfiguration;
+    //forCodeMirror?: CodeMirror.EditorConfiguration;
     language?: Language;
+    initialText?: string;
 }
 
 export interface Editor<TServerOptions extends ServerOptions> {
-    getCodeMirror(): CodeMirror.Editor;
-    setText(text: string): void;
+    getCodeMirror(): EditorView;
+    //setText(text: string): void;
     getLanguage(): Language;
     setLanguage(value: Language): void;
     sendServerOptions(value: TServerOptions): Promise<void>;

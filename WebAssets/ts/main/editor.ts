@@ -1,26 +1,25 @@
+//import type { EditorState } from '@codemirror/next/state';
+import { EditorView } from '@codemirror/next/view';
 import type {
     Language,
     Message,
-    ChangeData,
-    DiagnosticData,
-    SlowUpdateMessage,
-    DiagnosticSeverity,
-    ServerOptions,
-    SpanData
+    //ChangeData,
+    //DiagnosticData,
+    //SlowUpdateMessage,
+    //DiagnosticSeverity,
+    ServerOptions //,
+    //SpanData
 } from '../interfaces/protocol';
 import type { Connection } from '../interfaces/connection';
 import type { SelfDebug } from '../interfaces/self-debug';
-import type { Editor as EditorInterface, DestroyOptions, EditorOptions } from '../interfaces/editor';
-import * as CodeMirror from 'codemirror';
-import 'codemirror/mode/clike/clike';
-import 'codemirror-addon-infotip';
-import 'codemirror-addon-lint-fix';
-import { renderInfotip } from './render-infotip';
-import { Hinter } from './hinter';
-import { SignatureTip } from './signature-tip';
+import type { Editor as EditorInterface/*, DestroyOptions*/, EditorOptions } from '../interfaces/editor';
+import { createState } from './codemirror/create-state';
+//import { renderInfotip } from './render-infotip';
+//import { Hinter } from './hinter';
+//import { SignatureTip } from './signature-tip';
 import { addEvents } from '../helpers/add-events';
 
-const indexKey = '$mirrorsharp-index';
+/*const indexKey = '$mirrorsharp-index';
 interface PositionWithIndex extends CodeMirror.Position {
     [indexKey]: number;
 }
@@ -31,30 +30,29 @@ interface DiagnosticAnnotation extends CodeMirror.Annotation {
 
 interface AnnotationFixWithId extends CodeMirror.AnnotationFix {
     readonly id: number;
-}
+}*/
 
 function Editor<TServerOptions extends ServerOptions, TExtensionData>(
     this: EditorInterface<TServerOptions>,
-    textarea: HTMLTextAreaElement,
+    container: HTMLElement,
     connection: Connection<TExtensionData>,
     selfDebug: SelfDebug<TExtensionData>|null,
     options: EditorOptions<TExtensionData>
 ) {
-    const lineSeparator = '\r\n';
+    //const lineSeparator = '\r\n';
     const defaultLanguage = 'C#';
-    const languageModes = {
+    /*const languageModes = {
         'C#': 'text/x-csharp',
         'Visual Basic': 'text/x-vb',
         'F#': 'text/x-fsharp',
         'PHP': 'application/x-httpd-php'
-    };
+    };*/
 
-    /** @type {public.Language} */
     let language: Language;
     let serverOptions: {};
-    let lintingSuspended = true;
-    let hadChangesSinceLastLinting = false;
-    let capturedUpdateLinting: CodeMirror.UpdateLintingCallback|null|undefined;
+    //let lintingSuspended = true;
+    //let hadChangesSinceLastLinting = false;
+    //let capturedUpdateLinting: CodeMirror.UpdateLintingCallback|null|undefined;
 
     options = Object.assign({ language: defaultLanguage }, options);
     options.on = Object.assign({
@@ -65,24 +63,24 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
         serverError:      (message: string) => { throw new Error(message); }
     }, options.on);
 
-    const cmOptions: CodeMirror.EditorConfiguration = Object.assign({ gutters: [], indentUnit: 4 }, options.forCodeMirror, {
+    /*const cmOptions: CodeMirror.EditorConfiguration = Object.assign({ gutters: [], indentUnit: 4 }, options.forCodeMirror, {
         lineSeparator,
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         mode: languageModes[options.language!],
         lint: { async: true, getAnnotations: lintGetAnnotations, hasGutters: true },
         lintFix: { getFixes },
         infotip: { async: true, delay: 500, getInfo: infotipGetInfo, render: renderInfotip }
-    });
+    });*/
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    cmOptions.gutters!.push('CodeMirror-lint-markers');
+    //cmOptions.gutters!.push('CodeMirror-lint-markers');
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     language = options.language!;
     if (language !== defaultLanguage)
         serverOptions = { language };
 
-    const cmSource = (function getCodeMirror() {
+    /*const cmSource = (function getCodeMirror() {
         const next = textarea.nextSibling as { CodeMirror?: CodeMirror.Editor };
         if (next && next.CodeMirror) {
             const existing = next.CodeMirror;
@@ -98,7 +96,7 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
 
     const cm = cmSource.cm;
     const keyMap = {
-        /* eslint-disable object-shorthand */
+        /* eslint-disable object-shorthand * /
         'Tab': function() {
             if (cm.somethingSelected()) {
                 cm.execCommand('indentMore');
@@ -111,44 +109,48 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
         'Shift-Ctrl-Space': () => { connection.sendSignatureHelpState('force'); },
         'Ctrl-.': 'lintFixShow',
         'Shift-Ctrl-Y': selfDebug ? () => selfDebug.requestData(connection) : false
-        /* eslint-enable object-shorthand */
+        /* eslint-enable object-shorthand * /
     } as const;
     cm.addKeyMap(keyMap);
     // see https://github.com/codemirror/CodeMirror/blob/dbaf6a94f1ae50d387fa77893cf6b886988c2147/addon/lint/lint.js#L133
     // ensures that next 'id' will be -1 whether a change happened or not
     cm.state.lint.waitingFor = -2;
     if (!cmSource.existing)
-        setText(textarea.value);
+        setText(textarea.value);*/
 
-    /** @type {() => string} */
-    const getText = cm.getValue.bind(cm);
+    const wrapper = document.createElement('div');
+    const cmView = new EditorView({ state: createState({ initialText: options.initialText }) });
+    wrapper.appendChild(cmView.dom);
+    container.appendChild(wrapper);
+
+    const getText = () => cmView.state.doc.toString();
+    const getCursorIndex = () => cmView.state.selection.primaryIndex;
     if (selfDebug)
         selfDebug.watchEditor(getText, getCursorIndex);
 
-    const cmWrapper = cm.getWrapperElement();
-    cmWrapper.classList.add('mirrorsharp', 'mirrorsharp-theme');
+    /*const cmWrapper = cm.getWrapperElement();
+    cmWrapper.classList.add('mirrorsharp', 'mirrorsharp-theme');*/
 
-    const hinter = new Hinter(cm, connection);
-    const signatureTip = new SignatureTip(cm);
-    const removeConnectionEvents = addEvents(connection, {
+    //const hinter = new Hinter(cm, connection);
+    //const signatureTip = new SignatureTip(cm);
+    /*const removeConnectionEvents = */addEvents(connection, {
         open(e: Event) {
             hideConnectionLoss();
             if (serverOptions)
                 connection.sendSetOptions(serverOptions);
 
-            const text = cm.getValue();
+            const text = getText();
             if (text === '' || text == null) {
-                lintingSuspended = false;
+                //lintingSuspended = false;
                 return;
             }
 
             connection.sendReplaceText(0, 0, text, getCursorIndex());
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
             options.on!.connectionChange!('open', e);
-            lintingSuspended = false;
-            hadChangesSinceLastLinting = true;
-            if (capturedUpdateLinting)
-                requestSlowUpdate();
+            //lintingSuspended = false;
+            //hadChangesSinceLastLinting = true;
+            requestSlowUpdate();
         },
         message: onMessage,
         error: onCloseOrError,
@@ -156,7 +158,7 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
     });
 
     function onCloseOrError(e: CloseEvent|ErrorEvent) {
-        lintingSuspended = true;
+        //lintingSuspended = true;
         showConnectionLoss();
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const connectionChange = options.on!.connectionChange!;
@@ -168,10 +170,10 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
         }
     }
 
-    let changePending = false;
-    let changeReason: string|null = null;
-    let changesAreFromServer = false;
-    const removeCMEvents = addEvents(cm, {
+    //let changePending = false;
+    //let changeReason: string|null = null;
+    //let changesAreFromServer = false;
+    /*const removeCMEvents = addEvents(cm, {
         beforeChange(_: CodeMirror.Editor, change: CodeMirror.EditorChangeCancellable) {
             (change.from as PositionWithIndex)[indexKey] = cm.indexFromPos(change.from);
             (change.to as PositionWithIndex)[indexKey] = cm.indexFromPos(change.to);
@@ -216,12 +218,12 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
         for (const change of changes) {
             if (changesCanBeMerged(before, change)) {
                 before = {
-                    /* eslint-disable @typescript-eslint/no-non-null-assertion */
+                    /* eslint-disable @typescript-eslint/no-non-null-assertion * /
                     from: before!.from,
                     to: before!.to,
                     text: [before!.text[0] + change.text[0]],
                     origin: change.origin
-                    /* eslint-enable @typescript-eslint/no-non-null-assertion */
+                    /* eslint-enable @typescript-eslint/no-non-null-assertion * /
                 };
             }
             else {
@@ -244,42 +246,42 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
             && second.text.length === 1
             && second.from.ch === second.to.ch
             && (first.to.ch + first.text[0].length) === second.from.ch;
-    }
+    }*/
 
     function onMessage(message: Message<TExtensionData>) {
         switch (message.type) {
             case 'changes':
-                receiveServerChanges(message.changes, message.reason);
+                //receiveServerChanges(message.changes, message.reason);
                 break;
 
             case 'completions':
-                hinter.start(message.completions, message.span, {
-                    commitChars: message.commitChars,
-                    suggestion: message.suggestion
-                });
+                //hinter.start(message.completions, message.span, {
+                //    commitChars: message.commitChars,
+                //    suggestion: message.suggestion
+                //});
                 break;
 
             case 'completionInfo':
-                hinter.showTip(message.index, message.parts);
+                //hinter.showTip(message.index, message.parts);
                 break;
 
             case 'signatures':
-                signatureTip.update(message.signatures, message.span);
+                //signatureTip.update(message.signatures, message.span);
                 break;
 
             case 'infotip':
-                if (!message.sections) {
+                /*if (!message.sections) {
                     cm.infotipUpdate(null);
                     return;
                 }
                 cm.infotipUpdate({
                     data: message,
                     range: spanToRange(message.span)
-                });
+                });*/
                 break;
 
             case 'slowUpdate':
-                showSlowUpdate(message);
+                //showSlowUpdate(message);
                 break;
 
             case 'optionsEcho':
@@ -301,6 +303,7 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
         }
     }
 
+    /*
     function lintGetAnnotations(_: string, updateLinting: CodeMirror.UpdateLintingCallback) {
         if (!capturedUpdateLinting) {
             capturedUpdateLinting = function(this: unknown) {
@@ -312,17 +315,14 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
             };
         }
         requestSlowUpdate();
-    }
+    }*/
 
-    function getCursorIndex() {
-        return cm.indexFromPos(cm.getCursor());
-    }
-
+    /*
     function setText(text: string) {
         cm.setValue(text.replace(/(\r\n|\r|\n)/g, '\r\n'));
-    }
+    }*/
 
-    function receiveServerChanges(changes: ReadonlyArray<ChangeData>, reason: string) {
+    /*function receiveServerChanges(changes: ReadonlyArray<ChangeData>, reason: string) {
         changesAreFromServer = true;
         changeReason = reason || 'server';
         cm.operation(() => {
@@ -361,19 +361,19 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
 
     function infotipGetInfo(cm: CodeMirror.Editor, position: CodeMirror.Position) {
         connection.sendRequestInfoTip(cm.indexFromPos(position));
-    }
+    }*/
 
-    function requestSlowUpdate(force?: boolean) {
-        if (lintingSuspended || !(hadChangesSinceLastLinting || force))
+    function requestSlowUpdate(/*force?: boolean*/) {
+        /*if (lintingSuspended || !(hadChangesSinceLastLinting || force))
             return null;
         hadChangesSinceLastLinting = false;
         // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         options.on!.slowUpdateWait!();
-        return connection.sendSlowUpdate();
+        return connection.sendSlowUpdate();*/
     }
 
-    function showSlowUpdate(update: SlowUpdateMessage<TExtensionData>) {
-        const annotations: Array<DiagnosticAnnotation> = [];
+    /*function showSlowUpdate(update: SlowUpdateMessage<TExtensionData>) {
+        /*const annotations: Array<DiagnosticAnnotation> = [];
 
         // Higher severities must go last -- CodeMirror uses last one for the icon.
         // Unless one is error, in which case it's always error -- but still makes
@@ -410,12 +410,11 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
         options.on!.slowUpdateResult!({
             diagnostics: update.diagnostics,
             x: update.x
-        });
-    }
+        });* /
+    }*/
 
     let connectionLossElement: HTMLDivElement|undefined;
     function showConnectionLoss() {
-        const wrapper = cm.getWrapperElement();
         if (!connectionLossElement) {
             connectionLossElement = document.createElement('div');
             connectionLossElement.setAttribute('class', 'mirrorsharp-connection-issue');
@@ -427,30 +426,30 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
     }
 
     function hideConnectionLoss() {
-        cm.getWrapperElement().classList.remove('mirrorsharp-connection-has-issue');
+        wrapper.classList.remove('mirrorsharp-connection-has-issue');
     }
 
     async function sendServerOptions(value: ServerOptions) {
         await connection.sendSetOptions(value);
-        await requestSlowUpdate(true);
+        //await requestSlowUpdate(true);
     }
 
     function receiveServerOptions(value: ServerOptions) {
         serverOptions = value;
         if (value.language !== undefined && value.language !== language) {
             language = value.language;
-            cm.setOption('mode', languageModes[language]);
+            //cm.setOption('mode', languageModes[language]);
         }
     }
 
-    function spanToRange(span: SpanData) {
+    /*function spanToRange(span: SpanData) {
         return {
             from: cm.posFromIndex(span.start),
             to: cm.posFromIndex(span.start + span.length)
         };
-    }
+    }*/
 
-    function destroy(destroyOptions: DestroyOptions = {}) {
+    /*function destroy(destroyOptions: DestroyOptions = {}) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (cm as any).save();
         removeConnectionEvents();
@@ -466,19 +465,19 @@ function Editor<TServerOptions extends ServerOptions, TExtensionData>(
         cm.setOption('lintFix', null);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         cm.setOption('infotip', null as any as undefined);
-    }
+    }*/
 
-    this.getCodeMirror = () => cm;
-    this.setText = setText;
+    this.getCodeMirror = () => cmView;
+    //this.setText = setText;
     this.getLanguage = () => language;
     this.setLanguage = value => sendServerOptions({ language: value });
     this.sendServerOptions = sendServerOptions;
-    this.destroy = destroy;
+    //this.destroy = destroy;
 }
 
 const EditorAsConstructor = Editor as unknown as {
     new<TServerOptions extends ServerOptions, TExtensionData>(
-        textarea: HTMLTextAreaElement,
+        container: HTMLElement,
         connection: Connection<TExtensionData>,
         selfDebug: SelfDebug<TExtensionData>|null,
         options: EditorOptions<TExtensionData>

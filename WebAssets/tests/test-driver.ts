@@ -1,3 +1,4 @@
+import type { EditorState, StateCommand } from '@codemirror/next/state';
 import type { PartData, CompletionItemData, ChangeData } from '../ts/interfaces/protocol';
 import mirrorsharp, { MirrorSharpOptions, MirrorSharp } from '../ts/mirrorsharp';
 import { Keyboard } from 'keysim';
@@ -114,25 +115,24 @@ class TestDriver<TExtensionData = never> {
     public readonly mirrorsharp: MirrorSharp<TExtensionData>;
     public readonly keys: TestKeys;
     public readonly receive: TestReceiver;
-
-    private readonly cm: CodeMirror.Editor;
+    public readonly cmState: EditorState;
 
     private constructor(
         socket: MockSocket,
         mirrorsharp: MirrorSharp<TExtensionData>,
-        cm: CodeMirror.Editor,
+        cmState: EditorState,
         keys: TestKeys,
         receive: TestReceiver
     ) {
         this.socket = socket;
         this.mirrorsharp = mirrorsharp;
-        this.cm = cm;
+        this.cmState = cmState;
         this.keys = keys;
         this.receive = receive;
     }
 
-    getCodeMirror() {
-        return this.cm;
+    dispatchCMCommand(command: StateCommand) {
+        command({ state: this.cmState, dispatch: () => ({}) } );
     }
 
     async completeBackgroundWork() {

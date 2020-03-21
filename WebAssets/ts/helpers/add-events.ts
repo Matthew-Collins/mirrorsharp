@@ -1,4 +1,3 @@
-import type * as CodeMirror from 'codemirror';
 import type {
     Connection,
     ConnectionOpenHandler,
@@ -10,15 +9,6 @@ import type {
 // Workaround for https://github.com/microsoft/TypeScript/issues/37204
 // and https://github.com/microsoft/TypeScript/issues/37263
 type KnownEventGroups<TExtensionData> =
-    // CodeMirror
-    [CodeMirror.Editor, {
-        beforeChange?: (instance: CodeMirror.Editor, changeObj: CodeMirror.EditorChangeCancellable) => void;
-        cursorActivity?: (instance: CodeMirror.Editor) => void;
-        changes?: (instance: CodeMirror.Editor, changes: CodeMirror.EditorChangeLinkedList[]) => void;
-        keypress?: (instance: CodeMirror.Editor, event: KeyboardEvent) => void;
-        endCompletion?: (instance: CodeMirror.Editor) => void;
-    }]
-    |
     // Connection
     [Connection<TExtensionData>, {
         open?: ConnectionOpenHandler;

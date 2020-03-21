@@ -10,6 +10,6 @@ test('array of changes is handled correctly', async () => {
     ]);
     await driver.completeBackgroundWork();
 
-    const updated = driver.getCodeMirror().getValue();
+    const updated = driver.cmState.doc.toString();
     expect(updated).toBe('if (true){}');
 });

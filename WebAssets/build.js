@@ -32,7 +32,7 @@ task('ts', async () => {
 
     // Add .js extension to all imports.
     // Technically TypeScript already resolves .js to .ts, but it's a hack.
-    await Promise.all((await fg(['dist/**/*.js'])).map(async path => {
+    await Promise.all((await fg(['dist/**/*.js', '!dist/node_modules/**/*.js'])).map(async path => {
         const content = await jetpack.readAsync(path);
         const replaced = content.replace(/from '(\.[^']+)';/g, "from '$1.js';");
         await jetpack.writeAsync(path, replaced);
